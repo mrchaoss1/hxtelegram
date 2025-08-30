@@ -167,7 +167,7 @@ answerCallbackQuery(
 ## Inline keyboard example
 
 ```haxe
-import telegram.data.replymarkup.InlineKeyboardMarkup;
+import telegram.data.keyboard.InlineKeyboard;
 
 final kb:InlineKeyboardMarkup = {
   inline_keyboard: [
