@@ -135,9 +135,11 @@ class TelegramBot {
             trace('HTTP error ' + method + ': ' + err);
             cb({ success:false, error: TelegramError.NetworkError(err) });
         }
-
-        http.setHeader("Content-Type", "application/x-www-form-urlencoded");
-        http.postData = body;
+        
+        @:privateAccess {
+            http.setHeader("Content-Type", "application/x-www-form-urlencoded");
+            http.postData = body;
+        }
         http.request(true); // POST
     }
 

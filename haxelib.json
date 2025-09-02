@@ -6,7 +6,7 @@
         "haxe", "api", "wrapper", "http", "json", "async", "utility"
     ],
     "description": "A Haxe wrapper for the Telegram Bot API. Supports messages, updates, keyboards, and async polling.",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "releasenote": "Initial release",
     "contributors": ["Mr.Chaos"],
     "dependencies" : {

@@ -1,6 +1,8 @@
 # hxtelegram
 
-Typed Telegram Bot API client for Haxe. Focused on Node.js (hxnodejs) targets. Ships simple long‑polling, typed models, and event helpers.
+Typed Telegram Bot API client for Haxe. Focused on Node.js (hxnodejs) targets. Ships simple long-polling, typed models, and event helpers.
+
+[![haxelib](https://img.shields.io/badge/hxtelegram-v0.1.1-blue)](https://lib.haxe.org/p/hx_telegram)
 
 ## Features
 
@@ -8,7 +10,8 @@ Typed Telegram Bot API client for Haxe. Focused on Node.js (hxnodejs) targets. S
 * Minimal API surface with explicit callbacks via `TelegramResult<T>`
 * Event emitters: `onMessage`, `onCallbackQuery`
 * Long polling built in (`startPolling`, `stopPolling`)
-* Optional `baseUrl` override for self‑hosted proxies
+* Optional `baseUrl` override for self-hosted proxies
+* New helpers under `telegram/functions/*` (e.g. `whoami`, `stats`, `audit`)
 
 ## Requirements
 
@@ -18,26 +21,27 @@ Typed Telegram Bot API client for Haxe. Focused on Node.js (hxnodejs) targets. S
 
 ## Install
 
-Add sources to your build path or set up a dev lib:
+```bash
+haxelib install hxtelegram
+```
+
+This will also install dependencies like `hxnodejs`.
+
+If you want the development version from GitHub:
 
 ```bash
-haxelib install hxnodejs
-# If this repo is local
 haxelib git hxtelegram https://github.com/mrchaoss1/hxtelegram.git
 ```
 
 ## Environment
 
-Create a `.env` file next to your `Main.hx` or export env vars via your shell.
+Provide your bot token directly in code or load from a config file. Example below uses a local variable.
 
-```dotenv
-TELEGRAM_BOT_TOKEN=123456:ABC... # required
-
-# Optional
-POLL_TIMEOUT=20                  # seconds
+```haxe
+final token = "123456:ABC..."; // required
 ```
 
-Load with your own env loader or `Sys.getEnv` directly. Example below reads process env.
+You can also define polling timeout manually.
 
 ## Quick start
 
@@ -50,9 +54,9 @@ import telegram.data.messages.Message;
 
 class Main {
   static function main() {
-    final token = Sys.getEnv('TELEGRAM_BOT_TOKEN');
+    final token = "123456:ABC...";
     if (token == null || token == "") {
-      trace('Set TELEGRAM_BOT_TOKEN in your environment');
+      trace('Set TELEGRAM_BOT_TOKEN before running');
       return;
     }
 
@@ -78,7 +82,7 @@ class Main {
     });
 
     // start long polling (20s default)
-    bot.startPolling(Std.parseInt(Sys.getEnv('POLL_TIMEOUT')));
+    bot.startPolling(20);
   }
 }
 ```
@@ -211,13 +215,22 @@ function onSent(res:TelegramResult<Message>) {
 * `telegram/data/*` — typed Telegram models
 * `telegram/events/EventEmitter.hx` — tiny event utility
 * `telegram/errors/*` — error and result types
+* `telegram/tools/*` — additional helpers *(still in dev)*
+
+## Roadmap / Tasks
+
+- [ ] Expand the library to all Haxe targets *(not just Node.js)*
+- [ ] Add new tools *(e.g. more API endpoints, webhook support)*
+- [ ] Improve error recovery and reconnect logic
+- [ ] Extend documentation with more real-world examples
+- [ ] Provide optional async API ~*(never)*~
 
 ## FAQ
 
-**Why do methods take `Int` for `chatId`?**
-Telegram chat IDs fit in signed 32‑bit for typical private and group chats. Keep them as `Int` in Haxe to avoid `Float -> Int` issues.
+**Why do methods take `Int` for `chatId`?**  
+Telegram chat IDs fit in signed 32-bit for typical private and group chats. Keep them as `Int` in Haxe to avoid `Float -> Int` issues.
 
-**Can I change the API host?**
+**Can I change the API host?**  
 Yes. Pass `baseUrl` in `BotConfig`.
 
 ## License
