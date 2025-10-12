@@ -9,12 +9,12 @@ import telegram.events.EventEmitter;
 import telegram.errors.TelegramError;
 import telegram.errors.TelegramError.TelegramResult;
 
-import telegram.data.base.Response.TelegramResponse;
-import telegram.data.messages.Message;
-import telegram.data.updates.Update;
-import telegram.data.updates.CallbackQuery;
-import telegram.data.files.File;
-import telegram.data.keyboard.InlineKeyboard;
+import telegram.base.TelegramResponse;
+import telegram.types.Message;
+import telegram.types.Update;
+import telegram.types.CallbackQuery;
+import telegram.types.File;
+import telegram.types.InlineKeyboardMarkup;
 
 using StringTools;
 

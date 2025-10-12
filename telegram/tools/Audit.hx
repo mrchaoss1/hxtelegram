@@ -3,9 +3,10 @@ package telegram.tools;
 import haxe.ds.StringMap;
 import haxe.Timer;
 import haxe.Json;
-import telegram.data.messages.Message;
-import telegram.data.updates.Update;
-import telegram.data.updates.CallbackQuery;
+import telegram.types.Message;
+import telegram.types.Update;
+import telegram.types.CallbackQuery;
+import telegram.types.InaccessibleMessage;
 
 /**
  * Audit collects lightweight runtime metrics for a Telegram bot.
@@ -62,7 +63,22 @@ class Audit {
     public function onCallback(c:CallbackQuery):Void {
         totalCallbacks++;
         bumpUser(c.from.id, "callbacks");
-        if (c.message != null) bumpChat(c.message.chat.id, "callbacks");
+        var id = 0;
+
+        if (Reflect.getProperty(c.message, "date") == 0) // Got InaccessibleMessage
+        {
+            var msg:InaccessibleMessage = cast c.message;
+            id = msg.chat.id;
+        }
+        else {
+            var msg:Message = cast c.message;
+            id = msg.chat.id;
+        }
+        if (c.message != null) 
+        {
+            
+            bumpChat(id, "callbacks");
+        }
     }
 
     public function onError(e:Dynamic):Void {
