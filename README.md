@@ -1,6 +1,6 @@
 # hxtelegram
 
-Typed Telegram Bot API client for Haxe. Focused on Node.js (hxnodejs) targets. Ships simple long-polling, typed models, and event helpers.
+Typed Telegram Bot API client for Haxe. Ships simple long-polling, typed models, and event helpers.
 
 [![haxelib](https://img.shields.io/badge/hxtelegram-v0.1.1-blue)](https://lib.haxe.org/p/hx_telegram)
 
@@ -16,16 +16,12 @@ Typed Telegram Bot API client for Haxe. Focused on Node.js (hxnodejs) targets. S
 ## Requirements
 
 * Haxe 4.3+
-* Node.js **18+**
-* Library: `hxnodejs`
 
 ## Install
 
 ```bash
 haxelib install hxtelegram
 ```
-
-This will also install dependencies like `hxnodejs`.
 
 If you want the development version from GitHub:
 
@@ -45,12 +41,12 @@ You can also define polling timeout manually.
 
 ## Quick start
 
-Minimal echo bot for Node.js target.
+Minimal echo bot.
 
 ```haxe
 import telegram.bot.TelegramBot;
 import telegram.errors.TelegramError.TelegramResult;
-import telegram.data.messages.Message;
+import telegram.types.Message;
 
 class Main {
   static function main() {
@@ -87,13 +83,20 @@ class Main {
 }
 ```
 
-### Build and run (hxnodejs)
+### Build and run
 
+#### hxnodejs example
 ```bash
 # Compile to Node.js
 haxe -lib hxnodejs -cp src -main Main -js bin/Main.js
 # Run
 node bin/Main.js
+```
+
+#### eval example
+```bash
+# Run with interpreter
+haxe --interp -main Main
 ```
 
 ## API overview
@@ -171,7 +174,7 @@ answerCallbackQuery(
 ## Inline keyboard example
 
 ```haxe
-import telegram.data.keyboard.InlineKeyboard;
+import telegram.types.InlineKeyboardMarkup;
 
 final kb:InlineKeyboardMarkup = {
   inline_keyboard: [
@@ -212,7 +215,7 @@ function onSent(res:TelegramResult<Message>) {
 ## Project layout
 
 * `telegram/bot/TelegramBot.hx` — client and polling
-* `telegram/data/*` — typed Telegram models
+* `telegram/types/*` — typed Telegram models
 * `telegram/events/EventEmitter.hx` — tiny event utility
 * `telegram/errors/*` — error and result types
 * `telegram/tools/*` — additional helpers *(still in dev)*
