@@ -3,11 +3,11 @@
     "license": "MIT",
     "url": "https://github.com/mrchaoss1/hxtelegram",
     "tags": [
-        "haxe", "api", "wrapper", "http", "json", "async", "utility"
+        "haxe", "telegram", "bot", "api", "wrapper", "http", "json", "async", "utility"
     ],
     "description": "A Haxe wrapper for the Telegram Bot API. Supports messages, updates, keyboards, and async polling.",
-    "version": "0.1.1",
-    "releasenote": "Initial release",
+    "version": "0.2.0",
+    "releasenote": "40+ API methods, events for every Update kind, ChatId type, generic api(), backoff reconnect.",
     "contributors": ["Mr.Chaos"],
     "dependencies" : {
     }

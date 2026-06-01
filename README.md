@@ -2,16 +2,20 @@
 
 Typed Telegram Bot API client for Haxe. Ships simple long-polling, typed models, and event helpers.
 
-[![haxelib](https://img.shields.io/badge/hxtelegram-v0.1.1-blue)](https://lib.haxe.org/p/hx_telegram)
+[![haxelib](https://img.shields.io/badge/hxtelegram-v0.2.0-blue)](https://lib.haxe.org/p/hx_telegram)
 
 ## Features
 
 * Haxe 4.3+ types for common Telegram objects (Message, User, Chat, Update, CallbackQuery, File, InlineKeyboard…)
 * Minimal API surface with explicit callbacks via `TelegramResult<T>`
-* Event emitters: `onMessage`, `onCallbackQuery`
-* Long polling built in (`startPolling`, `stopPolling`)
-* Optional `baseUrl` override for self-hosted proxies
-* New helpers under `telegram/functions/*` (e.g. `whoami`, `stats`, `audit`)
+* **40+ typed methods** — sending (text/photo/document/audio/video/voice/animation/sticker/location/contact/dice/poll/media group), editing & deleting, forwarding & copying, moderation, pinning, commands and webhook management
+* **Event emitters for every `Update` kind** — `onMessage`, `onCallbackQuery`, `onInlineQuery`, `onPoll`, `onChatMember`, … plus a raw `onUpdate` stream and a global `onError`
+* **`api()` escape hatch** — call any Bot API method that doesn't have a typed helper yet
+* `ChatId` type accepts numeric ids **and** channel `@usernames` (and ids too large for 32-bit)
+* Long polling built in (`startPolling`, `stopPolling`) with exponential-backoff reconnect
+* Optional `baseUrl` override for self-hosted proxies, optional `debug` logging, and `allowedUpdates` filtering
+
+See [CHANGELOG.md](CHANGELOG.md) for the full 0.2.0 change list.
 
 ## Requirements
 
@@ -107,9 +111,14 @@ Below is the public surface detected in this repo. All methods use explicit call
 
 ```haxe
 typedef BotConfig = {
-  ?baseUrl:String,   // API host override
-  ?pollTimeout:Int   // seconds
+  ?baseUrl:String,              // API host override
+  ?pollTimeout:Int,             // long-poll timeout, seconds
+  ?debug:Bool,                  // log HTTP/poll activity via trace()
+  ?allowedUpdates:Array<String> // update types to receive (see getUpdates)
 }
+
+// Accepts Int, Float or a "@channelusername" String. m.chat.id (Int) fits implicitly.
+abstract ChatId(Dynamic) from Int from Float from String to Dynamic {}
 
 enum TelegramError {
   NetworkError(message:String);
@@ -127,44 +136,98 @@ typedef TelegramResult<T> = {
 
 ### Events
 
+Every optional field of `Update` has a matching emitter. Subscribe to as many
+as you need; `onUpdate` receives the raw update first, and `onError` fires on
+any failed request.
+
 ```haxe
 class TelegramBot {
+  public final onUpdate:EventEmitter<Update>;
   public final onMessage:EventEmitter<Message>;
+  public final onEditedMessage:EventEmitter<Message>;
+  public final onChannelPost:EventEmitter<Message>;
+  public final onEditedChannelPost:EventEmitter<Message>;
   public final onCallbackQuery:EventEmitter<CallbackQuery>;
+  public final onInlineQuery:EventEmitter<InlineQuery>;
+  public final onChosenInlineResult:EventEmitter<ChosenInlineResult>;
+  public final onShippingQuery:EventEmitter<ShippingQuery>;
+  public final onPreCheckoutQuery:EventEmitter<PreCheckoutQuery>;
+  public final onPurchasedPaidMedia:EventEmitter<PaidMediaPurchased>;
+  public final onPoll:EventEmitter<Poll>;
+  public final onPollAnswer:EventEmitter<PollAnswer>;
+  public final onMyChatMember:EventEmitter<ChatMemberUpdated>;
+  public final onChatMember:EventEmitter<ChatMemberUpdated>;
+  public final onChatJoinRequest:EventEmitter<ChatJoinRequest>;
+  public final onChatBoost:EventEmitter<ChatBoostUpdated>;
+  public final onRemovedChatBoost:EventEmitter<ChatBoostRemoved>;
+  public final onMessageReaction:EventEmitter<MessageReactionUpdated>;
+  public final onMessageReactionCount:EventEmitter<MessageReactionCountUpdated>;
+  public final onBusinessConnection:EventEmitter<BusinessConnection>;
+  public final onBusinessMessage:EventEmitter<Message>;
+  public final onEditedBusinessMessage:EventEmitter<Message>;
+  public final onDeletedBusinessMessages:EventEmitter<BusinessMessagesDeleted>;
+  public final onError:EventEmitter<TelegramError>;
 }
 ```
 
 ### TelegramBot
 
+`SendOptions` is a shared bag of common optional fields (`parse_mode`,
+`reply_markup`, `reply_parameters`, `caption`, `disable_notification`,
+`protect_content`, `message_thread_id`, `link_preview_options`, …). Methods that
+take `?options:{}` accept any extra fields verbatim, so you are never blocked
+waiting for a typed helper — and `api()` covers anything else.
+
 ```haxe
 new(token:String, ?config:BotConfig)
 startPolling(?timeoutSec:Int):Void
 stopPolling():Void
+isPolling():Bool
 
-sendMessage(
-  chatId:Int,
-  text:String,
-  ?params:{ ?parse_mode:String, ?reply_markup:InlineKeyboardMarkup },
-  cb:TelegramResult<Message> -> Void
-):Void
+// generic escape hatch for any Bot API method
+api<T>(method:String, ?params:{}, cb:TelegramResult<T> -> Void):Void
 
-sendPhoto(
-  chatId:Int,
-  photoUrl:String,
-  ?caption:String,
-  cb:TelegramResult<Message> -> Void
-):Void
-
+// bot / chat info
+getMe(cb):Void
+getChat(chatId:ChatId, cb):Void
+getChatMember(chatId:ChatId, userId:Int, cb):Void
+getChatMemberCount(chatId:ChatId, cb):Void
+getUserProfilePhotos(userId:Int, ?options:{}, cb):Void
 getFile(fileId:String, cb:TelegramResult<File> -> Void):Void
+fileLink(filePath:String):String            // download URL for a getFile path
 
-answerCallbackQuery(
-  id:String,
-  ?text:String,
-  ?showAlert:Bool,
-  ?url:String,       // optional URL for game/Deep-Link use cases
-  ?cacheTime:Int,
-  cb:TelegramResult<Bool> -> Void
-):Void
+// sending
+sendMessage(chatId:ChatId, text:String, ?options:SendOptions, cb):Void
+sendPhoto(chatId:ChatId, photo:String, ?caption:String, ?options:SendOptions, cb):Void
+sendDocument / sendAudio / sendVideo / sendAnimation / sendVoice / sendSticker(...)
+sendLocation(chatId:ChatId, latitude:Float, longitude:Float, ?options:{}, cb):Void
+sendContact(chatId:ChatId, phoneNumber:String, firstName:String, ?options:{}, cb):Void
+sendDice(chatId:ChatId, ?emoji:String, ?options:{}, cb):Void
+sendPoll(chatId:ChatId, question:String, options:Array<Dynamic>, ?extra:{}, cb):Void
+sendChatAction(chatId:ChatId, action:String, ?options:{}, cb):Void
+sendMediaGroup(chatId:ChatId, media:Array<Dynamic>, ?options:{}, cb):Void
+
+// forward / copy / edit / delete
+forwardMessage(chatId:ChatId, fromChatId:ChatId, messageId:Int, ?options:{}, cb):Void
+copyMessage(chatId:ChatId, fromChatId:ChatId, messageId:Int, ?options:{}, cb):Void
+editMessageText(chatId:ChatId, messageId:Int, text:String, ?options:SendOptions, cb):Void
+editMessageCaption(chatId:ChatId, messageId:Int, ?caption:String, ?options:SendOptions, cb):Void
+editMessageReplyMarkup(chatId:ChatId, messageId:Int, ?replyMarkup:{}, cb):Void
+deleteMessage(chatId:ChatId, messageId:Int, cb):Void
+deleteMessages(chatId:ChatId, messageIds:Array<Int>, cb):Void
+setMessageReaction(chatId:ChatId, messageId:Int, ?reaction:Array<Dynamic>, ?isBig:Bool, cb):Void
+
+// pinning
+pinChatMessage / unpinChatMessage / unpinAllChatMessages(...)
+
+// moderation
+banChatMember / unbanChatMember / restrictChatMember / leaveChat(...)
+
+// callback / inline / commands / webhook
+answerCallbackQuery(id:String, ?text:String, ?showAlert:Bool, ?url:String, ?cacheTime:Int, cb):Void
+answerInlineQuery(inlineQueryId:String, results:Array<Dynamic>, ?options:{}, cb):Void
+setMyCommands / getMyCommands / deleteMyCommands(...)
+setWebhook / deleteWebhook / getWebhookInfo(...)
 ```
 
 > Note: Every call requires a callback. If you see
@@ -195,11 +258,47 @@ bot.onCallbackQuery.on(function(q) {
 
 ## Receiving updates
 
-This client provides long polling. Use `startPolling()` and subscribe to `onMessage` and `onCallbackQuery`. Webhook helpers are not included in this repo.
+This client provides long polling. Use `startPolling()` and subscribe to any of
+the `on*` emitters. You can narrow what the server sends with `allowedUpdates`:
+
+```haxe
+final bot = new TelegramBot(token, { allowedUpdates: ["message", "callback_query"] });
+
+bot.onMessage.on(m -> trace('msg from ' + m.chat.id));
+bot.onInlineQuery.on(q -> bot.answerInlineQuery(q.id, [], r -> {}));
+bot.onPoll.on(p -> trace('poll update'));
+bot.onError.on(e -> trace('request failed: ' + e)); // global failure hook
+
+bot.startPolling(20);
+```
+
+Polling reconnects automatically with exponential backoff (1s → 30s) when a
+cycle fails. For **webhooks**, the registration endpoints are provided
+(`setWebhook`, `deleteWebhook`, `getWebhookInfo`) — you still supply your own
+HTTP server to receive the `Update` payloads.
+
+## Calling methods without a helper
+
+Anything not yet wrapped is one `api()` call away — it's fully typed by the
+result you expect:
+
+```haxe
+import telegram.types.User;
+
+bot.api("getMe", function(res:TelegramResult<User>) {
+  if (res.success) trace('I am @' + res.data.username);
+});
+
+// any extra params go in the second argument
+bot.api("setChatTitle", { chat_id: chatId, title: "New title" }, function(res:TelegramResult<Bool>) {
+  if (!res.success) trace(res.error);
+});
+```
 
 ## Error handling
 
-All callbacks receive `TelegramResult<T>`.
+All callbacks receive `TelegramResult<T>`. You can also subscribe to `onError`
+for a single place to observe every failure.
 
 ```haxe
 function onSent(res:TelegramResult<Message>) {
@@ -214,17 +313,21 @@ function onSent(res:TelegramResult<Message>) {
 
 ## Project layout
 
-* `telegram/bot/TelegramBot.hx` — client and polling
-* `telegram/types/*` — typed Telegram models
+* `telegram/bot/TelegramBot.hx` — client, polling and all API methods
+* `telegram/types/*` — typed Telegram models (incl. `ChatId`)
 * `telegram/events/EventEmitter.hx` — tiny event utility
 * `telegram/errors/*` — error and result types
 * `telegram/tools/*` — additional helpers *(still in dev)*
+* `CHANGELOG.md` — version history
 
 ## Roadmap / Tasks
 
 - [ ] Expand the library to all Haxe targets *(not just Node.js)*
-- [ ] Add new tools *(e.g. more API endpoints, webhook support)*
-- [ ] Improve error recovery and reconnect logic
+- [x] Add new tools — 40+ typed API endpoints, generic `api()`, and webhook registration *(0.2.0)*
+- [x] Improve error recovery and reconnect logic — exponential-backoff polling + `onError` *(0.2.0)*
+- [x] Support channel `@usernames` and large chat ids via `ChatId` *(0.2.0)*
+- [ ] Multipart upload of local files (currently file_id / URL only)
+- [ ] Built-in webhook server helper
 - [ ] Extend documentation with more real-world examples
 - [ ] Provide optional async API ~*(never)*~
 
