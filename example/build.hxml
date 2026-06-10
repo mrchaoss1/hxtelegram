@@ -1,0 +1,6 @@
+-cp ..
+-cp .
+-lib hxnodejs
+-main Main
+-js bin/Main.js
+--cmd node bin/Main.js

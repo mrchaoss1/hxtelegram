@@ -2,7 +2,7 @@
 
 All notable changes to **hxtelegram** are documented here.
 
-## 0.2.0
+## 0.1.2
 
 A large expansion of the client surface. Fully backward compatible — existing
 `sendMessage` / `sendPhoto` / `getFile` / `answerCallbackQuery` calls keep working.
@@ -54,6 +54,11 @@ A large expansion of the client surface. Fully backward compatible — existing
   for the lifetime of the bot; on JS it stays asynchronous as before.
 * `startPolling` is idempotent and honours `stopPolling` mid-flight.
 * HTTP/poll `trace()` logging is now silent unless `debug: true` is set.
+
+### Fixed
+
+* Added the missing `InputMessageContent` base type, which ~12 `InlineQueryResult*`
+  types referenced — they (and `answerInlineQuery`) now compile.
 
 ## 0.1.1
 

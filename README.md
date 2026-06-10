@@ -2,7 +2,7 @@
 
 Typed Telegram Bot API client for Haxe. Ships simple long-polling, typed models, and event helpers.
 
-[![haxelib](https://img.shields.io/badge/hxtelegram-v0.2.0-blue)](https://lib.haxe.org/p/hx_telegram)
+[![haxelib](https://img.shields.io/badge/hxtelegram-v0.1.2-blue)](https://lib.haxe.org/p/hx_telegram)
 
 ## Features
 
@@ -14,12 +14,16 @@ Typed Telegram Bot API client for Haxe. Ships simple long-polling, typed models,
 * `ChatId` type accepts numeric ids **and** channel `@usernames` (and ids too large for 32-bit)
 * Long polling built in (`startPolling`, `stopPolling`) with exponential-backoff reconnect
 * Optional `baseUrl` override for self-hosted proxies, optional `debug` logging, and `allowedUpdates` filtering
+* Cross-target: JS/Node and the sys targets (C++, HashLink, Neko, Python, JVM), standard library only
 
-See [CHANGELOG.md](CHANGELOG.md) for the full 0.2.0 change list.
+See [CHANGELOG.md](CHANGELOG.md) for the full 0.1.2 change list.
 
 ## Requirements
 
 * Haxe 4.3+
+* Works on JS (incl. Node via `hxnodejs`) and the sys targets — C++ (`hxcpp`),
+  HashLink, Neko, Python, JVM. Only the standard library is used (`haxe.Http`,
+  `haxe.Json`, `haxe.Timer`), no extra dependencies.
 
 ## Install
 
@@ -89,19 +93,40 @@ class Main {
 
 ### Build and run
 
-#### hxnodejs example
+A minimal echo-bot example lives in [`example/`](example/) with ready-made hxml
+files. Set your token, then build from inside that folder:
+
 ```bash
-# Compile to Node.js
-haxe -lib hxnodejs -cp src -main Main -js bin/Main.js
-# Run
-node bin/Main.js
+export TELEGRAM_BOT_TOKEN=123456:ABC...   # Windows: set TELEGRAM_BOT_TOKEN=...
+cd example
+
+haxe build.hxml       # Node.js  -> bin/Main.js, then runs it with node
+haxe build-cpp.hxml   # native C++ -> bin/cpp/Main.exe, then runs it
 ```
 
-#### eval example
+Or invoke the compiler directly (from `example/`); `-cp ..` puts the library on
+the classpath:
+
 ```bash
-# Run with interpreter
-haxe --interp -main Main
+# Node.js
+haxe -cp .. -cp . -lib hxnodejs -main Main -js bin/Main.js && node bin/Main.js
+
+# Native C++ (needs `haxelib install hxcpp`)
+haxe -cp .. -cp . -main Main -cpp bin/cpp && bin/cpp/Main
+
+# Interpreter (quick test, no build)
+haxe -cp .. -cp . --interp -main Main
 ```
+
+> **Polling and your main thread.** On **sys targets** (C++, HashLink, Neko,
+> Python, JVM…) `haxe.Http` is synchronous, so `startPolling` runs a blocking
+> loop and does not return — put any setup *before* it. On **JS** it is
+> asynchronous and returns immediately while the event loop keeps the bot alive.
+
+> **Debugging native crashes.** A null field access that's harmless on JS will
+> segfault on *release* hxcpp (`0xC0000005`). Rebuild with `-debug`
+> (`haxe -cp .. -cp . -main Main -cpp bin/cppdbg -debug`) and run — hxcpp will
+> report the offending file and line instead of crashing silently.
 
 ## API overview
 
@@ -318,14 +343,14 @@ function onSent(res:TelegramResult<Message>) {
 * `telegram/events/EventEmitter.hx` — tiny event utility
 * `telegram/errors/*` — error and result types
 * `telegram/tools/*` — additional helpers *(still in dev)*
+* `example/` — minimal echo-bot with `build.hxml` / `build-cpp.hxml`
 * `CHANGELOG.md` — version history
 
 ## Roadmap / Tasks
 
-- [ ] Expand the library to all Haxe targets *(not just Node.js)*
-- [x] Add new tools — 40+ typed API endpoints, generic `api()`, and webhook registration *(0.2.0)*
-- [x] Improve error recovery and reconnect logic — exponential-backoff polling + `onError` *(0.2.0)*
-- [x] Support channel `@usernames` and large chat ids via `ChatId` *(0.2.0)*
+- [x] Add new tools — 40+ typed API endpoints, generic `api()`, and webhook registration *(0.1.2)*
+- [x] Improve error recovery and reconnect logic — exponential-backoff polling + `onError` *(0.1.2)*
+- [x] Support channel `@usernames` and large chat ids via `ChatId` *(0.1.2)*
 - [ ] Multipart upload of local files (currently file_id / URL only)
 - [ ] Built-in webhook server helper
 - [ ] Extend documentation with more real-world examples
@@ -333,11 +358,19 @@ function onSent(res:TelegramResult<Message>) {
 
 ## FAQ
 
-**Why do methods take `Int` for `chatId`?**  
-Telegram chat IDs fit in signed 32-bit for typical private and group chats. Keep them as `Int` in Haxe to avoid `Float -> Int` issues.
+**What type is `chatId`?**  
+The `ChatId` type, which accepts an `Int`, a `Float` or a `@channelusername`
+`String`. An `Int` (e.g. `message.chat.id`) passes implicitly, so simple code
+just keeps using ints; pass a `Float`/`String` for channel usernames or for
+supergroup/channel ids that overflow signed 32-bit.
 
 **Can I change the API host?**  
 Yes. Pass `baseUrl` in `BotConfig`.
+
+**My bot crashes on C++ with `0xC0000005` but works on JS.**  
+That's a null field access (harmless `undefined` on JS, a hard segfault on
+release hxcpp). Rebuild with `-debug` to get the exact file and line — see
+[Build and run](#build-and-run).
 
 ## License
 
